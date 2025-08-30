@@ -30,6 +30,8 @@
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
             overflow: hidden;
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
         
         header {
@@ -194,6 +196,98 @@
             font-size: 0.9rem;
         }
         
+        /* Music Player Styles */
+        .music-player {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50px;
+            padding: 10px 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .play-btn, .vol-btn {
+            background: #e75480;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .play-btn:hover, .vol-btn:hover {
+            background: #d44072;
+            transform: scale(1.1);
+        }
+        
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        
+        .volume-slider {
+            width: 80px;
+            accent-color: #e75480;
+        }
+        
+        .song-info {
+            font-size: 14px;
+            color: #7c5c4d;
+            margin-left: 10px;
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Rose Petals Animation */
+        .rose-petals {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .petal {
+            position: absolute;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23e75480" d="M12,20C7,20 3,16 3,11C3,7 7,3 12,3C17,3 21,7 21,11C21,16 17,20 12,20Z" /></svg>');
+            background-size: cover;
+            width: 20px;
+            height: 20px;
+            opacity: 0.7;
+            animation: fall linear infinite;
+        }
+        
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
         @media (max-width: 768px) {
             h1 {
                 font-size: 3.5rem;
@@ -218,42 +312,34 @@
             .message {
                 font-size: 1.1rem;
             }
-        }
-        
-        /* Floating hearts animation */
-        .floating-hearts {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-        
-        .heart {
-            position: absolute;
-            color: rgba(231, 84, 128, 0.5);
-            animation: float 6s ease-in infinite;
-        }
-        
-        @keyframes float {
-            0% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
+            
+            .music-player {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                border-radius: 10px;
+                justify-content: center;
             }
-            50% {
-                opacity: 0.7;
+            
+            .volume-container {
+                display: none;
+                position: absolute;
+                bottom: 60px;
+                right: 10px;
+                background: rgba(255, 255, 255, 0.9);
+                padding: 10px;
+                border-radius: 10px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             }
-            100% {
-                transform: translateY(-100px) rotate(360deg);
-                opacity: 0;
+            
+            .volume-container.show {
+                display: flex;
             }
         }
     </style>
 </head>
 <body>
-    <div class="floating-hearts" id="hearts-container"></div>
+    <div class="rose-petals" id="petals-container"></div>
     
     <div class="container">
         <header>
@@ -282,6 +368,18 @@
         <footer>
             <p>Made with love for the most amazing woman in the world</p>
         </footer>
+    </div>
+
+    <!-- Music Player -->
+    <div class="music-player">
+        <div class="player-controls">
+            <button class="play-btn" id="playBtn">▶</button>
+            <button class="vol-btn" id="volBtn">♪</button>
+        </div>
+        <div class="volume-container" id="volContainer">
+            <input type="range" class="volume-slider" id="volSlider" min="0" max="1" step="0.1" value="0.5">
+        </div>
+        <div class="song-info" id="songInfo">Not playing</div>
     </div>
 
     <script>
@@ -314,6 +412,26 @@
             }
         ];
 
+        // Music playlist
+        const musicPlaylist = [
+            {
+                title: "Romantic Melody 1",
+                src: "https://files.catbox.moe/81q1ty.m4a"
+            },
+            {
+                title: "Romantic Melody 2",
+                src: "https://files.catbox.moe/rn1qg7.m4a"
+            },
+            {
+                title: "Romantic Melody 3",
+                src: "https://files.catbox.moe/cmwp7c.mp3"
+            },
+            {
+                title: "Romantic Melody 4",
+                src: "https://files.catbox.moe/wv6rbe.m4a"
+            }
+        ];
+
         // Function to generate the gallery cards
         function generateGallery() {
             const gallery = document.getElementById('imageGallery');
@@ -336,28 +454,82 @@
             });
         }
 
-        // Function to create floating hearts
-        function createHearts() {
-            const heartsContainer = document.getElementById('hearts-container');
-            const heartCount = 25;
+        // Function to create rose petals
+        function createRosePetals() {
+            const petalsContainer = document.getElementById('petals-container');
+            const petalCount = 30;
             
-            for (let i = 0; i < heartCount; i++) {
-                const heart = document.createElement('div');
-                heart.className = 'heart';
-                heart.innerHTML = '❤';
-                heart.style.left = Math.random() * 100 + 'vw';
-                heart.style.fontSize = (Math.random() * 20 + 10) + 'px';
-                heart.style.animationDelay = Math.random() * 5 + 's';
-                heart.style.animationDuration = (Math.random() * 10 + 10) + 's';
-                heartsContainer.appendChild(heart);
+            for (let i = 0; i < petalCount; i++) {
+                const petal = document.createElement('div');
+                petal.className = 'petal';
+                petal.style.left = Math.random() * 100 + 'vw';
+                petal.style.animationDuration = (Math.random() * 10 + 5) + 's';
+                petal.style.animationDelay = Math.random() * 5 + 's';
+                petal.style.opacity = Math.random() * 0.5 + 0.3;
+                petal.style.width = (Math.random() * 15 + 10) + 'px';
+                petal.style.height = petal.style.width;
+                petalsContainer.appendChild(petal);
             }
         }
 
-        // Initialize the gallery and hearts when the page loads
+        // Music player functionality
+        function setupMusicPlayer() {
+            const audio = new Audio();
+            let currentSongIndex = 0;
+            let isPlaying = false;
+            
+            const playBtn = document.getElementById('playBtn');
+            const volBtn = document.getElementById('volBtn');
+            const volContainer = document.getElementById('volContainer');
+            const volSlider = document.getElementById('volSlider');
+            const songInfo = document.getElementById('songInfo');
+            
+            // Load first song
+            audio.src = musicPlaylist[currentSongIndex].src;
+            audio.volume = volSlider.value;
+            songInfo.textContent = musicPlaylist[currentSongIndex].title;
+            
+            // Play/Pause functionality
+            playBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    audio.pause();
+                    playBtn.textContent = '▶';
+                } else {
+                    audio.play();
+                    playBtn.textContent = '❚❚';
+                }
+                isPlaying = !isPlaying;
+            });
+            
+            // Volume control
+            volBtn.addEventListener('click', () => {
+                volContainer.classList.toggle('show');
+            });
+            
+            volSlider.addEventListener('input', () => {
+                audio.volume = volSlider.value;
+            });
+            
+            // When song ends, play next one
+            audio.addEventListener('ended', () => {
+                currentSongIndex = (currentSongIndex + 1) % musicPlaylist.length;
+                audio.src = musicPlaylist[currentSongIndex].src;
+                songInfo.textContent = musicPlaylist[currentSongIndex].title;
+                audio.play();
+            });
+            
+            // Error handling
+            audio.addEventListener('error', () => {
+                songInfo.textContent = "Error loading audio";
+            });
+        }
+
+        // Initialize everything when the page loads
         document.addEventListener('DOMContentLoaded', function() {
             generateGallery();
-            createHearts();
+            createRosePetals();
+            setupMusicPlayer();
         });
     </script>
 </body>
-  </html>
+</html>
