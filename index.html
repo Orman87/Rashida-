@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DEAR RASHIDA</title>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Parisienne&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -86,20 +87,47 @@
             gap: 25px;
             margin-bottom: 40px;
             padding: 0 15px;
+            position: relative;
+            background: transparent;
+        }
+        
+        /* Golden Sparkles Effect */
+        .golden-sparkle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #FFD700;
+            border-radius: 50%;
+            box-shadow: 0 0 10px 2px #FFD700;
+            animation: sparkle 3s infinite;
+            z-index: 1;
+        }
+        
+        @keyframes sparkle {
+            0%, 100% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
         }
         
         .card {
-            background: white;
+            background: rgba(255, 255, 255, 0.7);
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
             transition: transform 0.4s ease, box-shadow 0.4s ease;
             position: relative;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
         }
         
         .card:hover {
             transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 215, 0, 0.4);
         }
         
         .card-img {
@@ -117,6 +145,39 @@
         
         .card:hover .card-img img {
             transform: scale(1.1);
+        }
+        
+        .download-btn {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(255, 215, 0, 0.9);
+            color: #7c5c4d;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(10px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 2;
+        }
+        
+        .card:hover .download-btn {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .download-btn:hover {
+            background: #FFD700;
+            transform: scale(1.1) rotate(360deg);
+            box-shadow: 0 0 15px #FFD700;
         }
         
         .card-content {
@@ -209,15 +270,16 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            backdrop-filter: blur(5px);
         }
         
         .player-controls {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         
-        .play-btn, .vol-btn {
+        .play-btn, .vol-btn, .prev-btn, .next-btn {
             background: #e75480;
             color: white;
             border: none;
@@ -230,11 +292,17 @@
             justify-content: center;
             font-size: 16px;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
         
-        .play-btn:hover, .vol-btn:hover {
+        .play-btn:hover, .vol-btn:hover, .prev-btn:hover, .next-btn:hover {
             background: #d44072;
             transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(231, 84, 128, 0.7);
+        }
+        
+        .play-btn:active, .vol-btn:active, .prev-btn:active, .next-btn:active {
+            transform: scale(0.95);
         }
         
         .volume-container {
@@ -286,6 +354,26 @@
                 transform: translateY(100vh) rotate(360deg);
                 opacity: 0;
             }
+        }
+        
+        /* Button animations */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(231, 84, 128, 0.7);
+            }
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(231, 84, 128, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(231, 84, 128, 0);
+            }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
         }
         
         @media (max-width: 768px) {
@@ -373,8 +461,10 @@
     <!-- Music Player -->
     <div class="music-player">
         <div class="player-controls">
-            <button class="play-btn" id="playBtn">▶</button>
-            <button class="vol-btn" id="volBtn">♪</button>
+            <button class="prev-btn" id="prevBtn"><i class="fas fa-step-backward"></i></button>
+            <button class="play-btn pulse" id="playBtn"><i class="fas fa-play"></i></button>
+            <button class="next-btn" id="nextBtn"><i class="fas fa-step-forward"></i></button>
+            <button class="vol-btn" id="volBtn"><i class="fas fa-volume-up"></i></button>
         </div>
         <div class="volume-container" id="volContainer">
             <input type="range" class="volume-slider" id="volSlider" min="0" max="1" step="0.1" value="0.5">
@@ -436,13 +526,16 @@
         function generateGallery() {
             const gallery = document.getElementById('imageGallery');
             
-            romanticData.forEach(item => {
+            romanticData.forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = 'card';
                 
                 card.innerHTML = `
                     <div class="card-img">
                         <img src="${item.imageUrl}" alt="Romantic image">
+                        <button class="download-btn" data-url="${item.imageUrl}" data-index="${index}">
+                            <i class="fas fa-download"></i>
+                        </button>
                     </div>
                     <div class="card-content">
                         <p class="card-quote">"${item.quote}"</p>
@@ -452,84 +545,54 @@
                 
                 gallery.appendChild(card);
             });
+            
+            // Add golden sparkles to the gallery
+            addGoldenSparkles();
+            
+            // Add download functionality
+            setupDownloadButtons();
         }
 
-        // Function to create rose petals
-        function createRosePetals() {
-            const petalsContainer = document.getElementById('petals-container');
-            const petalCount = 30;
+        // Function to add golden sparkles to the gallery
+        function addGoldenSparkles() {
+            const gallery = document.getElementById('imageGallery');
+            const sparkleCount = 20;
             
-            for (let i = 0; i < petalCount; i++) {
-                const petal = document.createElement('div');
-                petal.className = 'petal';
-                petal.style.left = Math.random() * 100 + 'vw';
-                petal.style.animationDuration = (Math.random() * 10 + 5) + 's';
-                petal.style.animationDelay = Math.random() * 5 + 's';
-                petal.style.opacity = Math.random() * 0.5 + 0.3;
-                petal.style.width = (Math.random() * 15 + 10) + 'px';
-                petal.style.height = petal.style.width;
-                petalsContainer.appendChild(petal);
+            for (let i = 0; i < sparkleCount; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'golden-sparkle';
+                sparkle.style.left = Math.random() * 100 + '%';
+                sparkle.style.top = Math.random() * 100 + '%';
+                sparkle.style.animationDelay = Math.random() * 5 + 's';
+                sparkle.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                gallery.appendChild(sparkle);
             }
         }
 
-        // Music player functionality
-        function setupMusicPlayer() {
-            const audio = new Audio();
-            let currentSongIndex = 0;
-            let isPlaying = false;
+        // Function to setup download buttons
+        function setupDownloadButtons() {
+            const downloadButtons = document.querySelectorAll('.download-btn');
             
-            const playBtn = document.getElementById('playBtn');
-            const volBtn = document.getElementById('volBtn');
-            const volContainer = document.getElementById('volContainer');
-            const volSlider = document.getElementById('volSlider');
-            const songInfo = document.getElementById('songInfo');
-            
-            // Load first song
-            audio.src = musicPlaylist[currentSongIndex].src;
-            audio.volume = volSlider.value;
-            songInfo.textContent = musicPlaylist[currentSongIndex].title;
-            
-            // Play/Pause functionality
-            playBtn.addEventListener('click', () => {
-                if (isPlaying) {
-                    audio.pause();
-                    playBtn.textContent = '▶';
-                } else {
-                    audio.play();
-                    playBtn.textContent = '❚❚';
-                }
-                isPlaying = !isPlaying;
-            });
-            
-            // Volume control
-            volBtn.addEventListener('click', () => {
-                volContainer.classList.toggle('show');
-            });
-            
-            volSlider.addEventListener('input', () => {
-                audio.volume = volSlider.value;
-            });
-            
-            // When song ends, play next one
-            audio.addEventListener('ended', () => {
-                currentSongIndex = (currentSongIndex + 1) % musicPlaylist.length;
-                audio.src = musicPlaylist[currentSongIndex].src;
-                songInfo.textContent = musicPlaylist[currentSongIndex].title;
-                audio.play();
-            });
-            
-            // Error handling
-            audio.addEventListener('error', () => {
-                songInfo.textContent = "Error loading audio";
-            });
-        }
-
-        // Initialize everything when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            generateGallery();
-            createRosePetals();
-            setupMusicPlayer();
-        });
-    </script>
-</body>
-</html>
+            downloadButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const imageUrl = this.getAttribute('data-url');
+                    const imageIndex = this.getAttribute('data-index');
+                    
+                    // Create a temporary anchor element to trigger download
+                    const a = document.createElement('a');
+                    a.href = imageUrl;
+                    a.download = `rashida_image_${parseInt(imageIndex) + 1}.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    
+                    // Add animation to the button
+                    this.innerHTML = '<i class="fas fa-check"></i>';
+                    this.style.background = '#4CAF50';
+                    
+                    setTimeout(() => {
+                        this.innerHTML = '<i class="fas fa-download"></i>';
+                        this.style.background = 'rgba(255, 215, 0, 0.9)';
+                    }, 1500);
+           
