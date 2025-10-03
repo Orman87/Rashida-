@@ -1,0 +1,212 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Orman XMD Session Generator</title>
+  <!-- Tailwind via CDN for quick styling (no build step required) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* small custom touches */
+    :root{--glass: rgba(255,255,255,0.06); --accent: linear-gradient(90deg,#7c3aed,#06b6d4)}
+    .glass { background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); backdrop-filter: blur(6px); }
+    .sparkle { animation: floaty 6s ease-in-out infinite; }
+    @keyframes floaty { 0% { transform: translateY(0px) } 50% { transform: translateY(-6px) } 100% { transform: translateY(0px) } }
+    pre { white-space: pre-wrap; word-break: break-word; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100 antialiased">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-extrabold tracking-tight">Orman <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-300">xmd</span> Session Generator</h1>
+        <p class="text-slate-400 mt-1">Create secure, customizable session payloads with a smooth UI — copy, download or preview JSON instantly.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="themeBtn" class="px-3 py-2 rounded-lg glass border border-white/6 hover:scale-105 transition">Toggle Theme</button>
+        <div class="text-sm text-slate-400">v1.0</div>
+      </div>
+    </header><main class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <!-- Controls -->
+  <section class="md:col-span-1 glass p-5 rounded-2xl shadow-xl">
+    <h2 class="text-lg font-semibold mb-3">Session Settings</h2>
+    <label class="block text-sm text-slate-300">Username</label>
+    <input id="username" class="mt-2 w-full rounded-md p-2 bg-transparent border border-white/6" placeholder="e.g. orman_kubuya" value="Orman" />
+
+    <label class="block text-sm text-slate-300 mt-4">Session Type</label>
+    <select id="stype" class="mt-2 w-full rounded-md p-2 bg-transparent border border-white/6">
+      <option value="user">User</option>
+      <option value="admin">Admin</option>
+      <option value="service">Service</option>
+    </select>
+
+    <div class="flex items-center justify-between mt-4">
+      <div>
+        <label class="block text-sm text-slate-300">Token length (bytes)</label>
+        <input id="tlen" type="number" min="8" max="128" value="32" class="mt-2 w-28 rounded-md p-2 bg-transparent border border-white/6" />
+      </div>
+      <div>
+        <label class="block text-sm text-slate-300">Expires (mins)</label>
+        <input id="exp" type="number" min="1" max="525600" value="1440" class="mt-2 w-28 rounded-md p-2 bg-transparent border border-white/6" />
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <label class="flex items-center gap-2 text-sm text-slate-300"><input id="metaToggle" type="checkbox" checked /> Include metadata</label>
+    </div>
+
+    <div class="mt-6 flex gap-3">
+      <button id="generateBtn" class="flex-1 rounded-xl py-2 font-semibold shadow-md" style="background:var(--accent);">Generate</button>
+      <button id="regenBtn" class="rounded-xl px-4 py-2 bg-white/6 border border-white/6">Regenerate</button>
+    </div>
+
+    <div class="mt-4 text-sm text-slate-400">Quick actions</div>
+    <div class="mt-2 flex gap-2">
+      <button id="copyBtn" class="flex-1 rounded-lg p-2 bg-white/6 border">Copy JSON</button>
+      <button id="downloadBtn" class="rounded-lg p-2 bg-white/6 border">Download</button>
+    </div>
+
+    <div class="mt-4 text-xs text-slate-500">Security: tokens are generated locally in your browser using the Web Crypto API. No data is sent to any server.</div>
+  </section>
+
+  <!-- Preview -->
+  <section class="md:col-span-2 glass p-5 rounded-2xl shadow-xl flex flex-col">
+    <div class="flex items-start justify-between">
+      <h2 class="text-lg font-semibold">Preview & Details</h2>
+      <div class="text-sm text-slate-400">Live preview of the session object</div>
+    </div>
+
+    <div class="mt-4 flex-1 overflow-auto">
+      <pre id="preview" class="p-4 bg-slate-900/40 rounded-lg text-sm leading-relaxed">{
+
+"id": "...", "username": "Orman", "token": "...", "type": "user", "created_at": "...", "expires_at": "...", "meta": {} }</pre> </div>
+
+<div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="p-3 rounded-lg bg-white/3">
+        <div class="text-xs text-slate-300">Session ID</div>
+        <div id="sid" class="font-mono mt-1 break-all">—</div>
+      </div>
+      <div class="p-3 rounded-lg bg-white/3">
+        <div class="text-xs text-slate-300">Token (short)</div>
+        <div id="stoken" class="font-mono mt-1 break-all">—</div>
+      </div>
+      <div class="p-3 rounded-lg bg-white/3">
+        <div class="text-xs text-slate-300">Expires</div>
+        <div id="sexp" class="font-mono mt-1">—</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="mt-8 text-center text-slate-500 text-sm">Made with ♥ for Orman — tweak it and make it yours.</footer>
+
+  </div>  <script>
+    // Utility: secure random bytes -> hex
+    function toHex(arr){ return Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join(''); }
+    function uidShort(){ const r = new Uint8Array(8); crypto.getRandomValues(r); return toHex(r); }
+    function genToken(len){ const r = new Uint8Array(len); crypto.getRandomValues(r); return btoa(String.fromCharCode(...r)); }
+
+    // DOM
+    const username = document.getElementById('username');
+    const stype = document.getElementById('stype');
+    const tlen = document.getElementById('tlen');
+    const exp = document.getElementById('exp');
+    const metaToggle = document.getElementById('metaToggle');
+    const preview = document.getElementById('preview');
+    const generateBtn = document.getElementById('generateBtn');
+    const regenBtn = document.getElementById('regenBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const sid = document.getElementById('sid');
+    const stoken = document.getElementById('stoken');
+    const sexp = document.getElementById('sexp');
+    const themeBtn = document.getElementById('themeBtn');
+
+    let lastPayload = null;
+
+    function buildPayload(){
+      const now = new Date();
+      const expiresIn = parseInt(exp.value,10)||1440;
+      const createdAt = now.toISOString();
+      const expiresAt = new Date(now.getTime() + expiresIn*60000).toISOString();
+      const tokenBytes = Math.max(8, Math.min(128, parseInt(tlen.value,10)||32));
+      const token = genToken(tokenBytes);
+      const id = 'sess_' + uidShort();
+
+      const payload = {
+        id,
+        username: username.value || 'Orman',
+        token,
+        type: stype.value,
+        created_at: createdAt,
+        expires_at: expiresAt,
+      };
+
+      if(metaToggle.checked){
+        payload.meta = {
+          device: navigator.userAgent || null,
+          origin: location.origin || null,
+          friendly: `${payload.username}@${payload.type}`
+        }
+      }
+
+      lastPayload = payload;
+      return payload;
+    }
+
+    function render(payload){
+      preview.textContent = JSON.stringify(payload, null, 2);
+      sid.textContent = payload.id;
+      stoken.textContent = payload.token.slice(0,24) + (payload.token.length>24? '...' : '');
+      sexp.textContent = new Date(payload.expires_at).toLocaleString();
+    }
+
+    generateBtn.addEventListener('click', ()=>{
+      const p = buildPayload();
+      render(p);
+      flash(generateBtn);
+    });
+
+    regenBtn.addEventListener('click', ()=>{
+      if(!lastPayload) { const p = buildPayload(); render(p); return; }
+      // regenerate token and id, keep username & settings
+      const now = new Date();
+      lastPayload.id = 'sess_' + uidShort();
+      lastPayload.token = genToken(Math.max(8, Math.min(128, parseInt(tlen.value,10)||32)));
+      lastPayload.created_at = now.toISOString();
+      lastPayload.expires_at = new Date(now.getTime() + (parseInt(exp.value,10)||1440)*60000).toISOString();
+      if(metaToggle.checked) lastPayload.meta.device = navigator.userAgent;
+      render(lastPayload);
+      flash(regenBtn);
+    });
+
+    copyBtn.addEventListener('click', async ()=>{
+      const text = preview.textContent;
+      try{ await navigator.clipboard.writeText(text); copyBtn.textContent = 'Copied!'; setTimeout(()=>copyBtn.textContent='Copy JSON',1400); }
+      catch(e){ alert('Unable to copy.'); }
+    });
+
+    downloadBtn.addEventListener('click', ()=>{
+      const data = preview.textContent;
+      const blob = new Blob([data], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = (lastPayload?.id || 'session') + '.json';
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    function flash(el){ el.animate([{transform:'scale(1)'},{transform:'scale(1.04)'},{transform:'scale(1)'}],{duration:260}); }
+
+    // small theme toggle: flip between light-ish and dark-ish
+    let light = false;
+    themeBtn.addEventListener('click', ()=>{
+      light = !light;
+      if(light){ document.documentElement.style.setProperty('--accent','linear-gradient(90deg,#f97316,#ef4444)'); document.body.classList.remove('bg-gradient-to-br'); document.body.style.background = 'linear-gradient(180deg,#f8fafc,#eef2ff)'; document.body.style.color = '#0f172a'; }
+      else{ document.documentElement.style.setProperty('--accent','linear-gradient(90deg,#7c3aed,#06b6d4)'); document.body.style.background = ''; document.body.style.color = ''; }
+    });
+
+    // auto-generate on first load
+    window.addEventListener('load', ()=>{ const p = buildPayload(); render(p); });
+  </script></body>
+</html>
