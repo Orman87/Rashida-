@@ -4,15 +4,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Orman XMD Session Generator</title>
-  <!-- Tailwind via CDN for quick styling (no build step required) -->
+  <title>Orman XMD Session Generator — WhatsApp Code Flow</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* small custom touches */
     :root{--glass: rgba(255,255,255,0.06); --accent: linear-gradient(90deg,#7c3aed,#06b6d4)}
     .glass { background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); backdrop-filter: blur(6px); }
-    .sparkle { animation: floaty 6s ease-in-out infinite; }
-    @keyframes floaty { 0% { transform: translateY(0px) } 50% { transform: translateY(-6px) } 100% { transform: translateY(0px) } }
     pre { white-space: pre-wrap; word-break: break-word; }
   </style>
 </head>
@@ -21,16 +17,16 @@
     <header class="flex items-center justify-between mb-8">
       <div>
         <h1 class="text-3xl font-extrabold tracking-tight">Orman <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-300">xmd</span> Session Generator</h1>
-        <p class="text-slate-400 mt-1">Create secure, customizable session payloads with a smooth UI — copy, download or preview JSON instantly.</p>
+        <p class="text-slate-400 mt-1">Generate a WhatsApp-friendly code which, when sent/returned in WhatsApp, can reveal a session id — entirely client-side.</p>
       </div>
       <div class="flex items-center gap-3">
-        <button id="themeBtn" class="px-3 py-2 rounded-lg glass border border-white/6 hover:scale-105 transition">Toggle Theme</button>
-        <div class="text-sm text-slate-400">v1.0</div>
+        <div class="text-sm text-slate-400">v1.1 — WhatsApp flow</div>
       </div>
     </header><main class="grid grid-cols-1 md:grid-cols-3 gap-6">
   <!-- Controls -->
   <section class="md:col-span-1 glass p-5 rounded-2xl shadow-xl">
-    <h2 class="text-lg font-semibold mb-3">Session Settings</h2>
+    <h2 class="text-lg font-semibold mb-3">Session & WhatsApp Code</h2>
+
     <label class="block text-sm text-slate-300">Username</label>
     <input id="username" class="mt-2 w-full rounded-md p-2 bg-transparent border border-white/6" placeholder="e.g. orman_kubuya" value="Orman" />
 
@@ -52,13 +48,9 @@
       </div>
     </div>
 
-    <div class="mt-4">
-      <label class="flex items-center gap-2 text-sm text-slate-300"><input id="metaToggle" type="checkbox" checked /> Include metadata</label>
-    </div>
-
     <div class="mt-6 flex gap-3">
-      <button id="generateBtn" class="flex-1 rounded-xl py-2 font-semibold shadow-md" style="background:var(--accent);">Generate</button>
-      <button id="regenBtn" class="rounded-xl px-4 py-2 bg-white/6 border border-white/6">Regenerate</button>
+      <button id="generateBtn" class="flex-1 rounded-xl py-2 font-semibold shadow-md" style="background:var(--accent);">Generate Session</button>
+      <button id="whatsappCodeBtn" class="rounded-xl px-4 py-2 bg-white/6 border border-white/6">Generate WA Code</button>
     </div>
 
     <div class="mt-4 text-sm text-slate-400">Quick actions</div>
@@ -67,14 +59,14 @@
       <button id="downloadBtn" class="rounded-lg p-2 bg-white/6 border">Download</button>
     </div>
 
-    <div class="mt-4 text-xs text-slate-500">Security: tokens are generated locally in your browser using the Web Crypto API. No data is sent to any server.</div>
+    <div class="mt-4 text-xs text-slate-500">How it works: the page generates a session and a compact WhatsApp-friendly code. Send that code in WhatsApp (to yourself or a bot). When you get the reply back, paste the message into the box on the right — the site will extract the session id.</div>
   </section>
 
-  <!-- Preview -->
+  <!-- Preview & WA flow -->
   <section class="md:col-span-2 glass p-5 rounded-2xl shadow-xl flex flex-col">
     <div class="flex items-start justify-between">
-      <h2 class="text-lg font-semibold">Preview & Details</h2>
-      <div class="text-sm text-slate-400">Live preview of the session object</div>
+      <h2 class="text-lg font-semibold">Preview & WhatsApp Exchange</h2>
+      <div class="text-sm text-slate-400">Paste WhatsApp reply below to extract session id</div>
     </div>
 
     <div class="mt-4 flex-1 overflow-auto">
@@ -88,40 +80,52 @@
         <div id="sid" class="font-mono mt-1 break-all">—</div>
       </div>
       <div class="p-3 rounded-lg bg-white/3">
-        <div class="text-xs text-slate-300">Token (short)</div>
-        <div id="stoken" class="font-mono mt-1 break-all">—</div>
+        <div class="text-xs text-slate-300">WA Code</div>
+        <div id="wacode" class="font-mono mt-1 break-all">—</div>
       </div>
       <div class="p-3 rounded-lg bg-white/3">
         <div class="text-xs text-slate-300">Expires</div>
         <div id="sexp" class="font-mono mt-1">—</div>
       </div>
     </div>
+
+    <div class="mt-6">
+      <label class="block text-sm text-slate-300">Paste WhatsApp message (the reply you received)</label>
+      <textarea id="waInput" rows="4" class="mt-2 w-full rounded-md p-3 bg-transparent border border-white/6" placeholder="Paste the full WhatsApp message here"></textarea>
+      <div class="mt-3 flex gap-2">
+        <button id="parseBtn" class="rounded-xl px-4 py-2 bg-white/6 border">Parse Message</button>
+        <button id="clearBtn" class="rounded-xl px-4 py-2 bg-white/6 border">Clear</button>
+      </div>
+
+      <div id="parseResult" class="mt-4 p-3 rounded-lg bg-white/4 font-mono"></div>
+    </div>
   </section>
 </main>
 
-<footer class="mt-8 text-center text-slate-500 text-sm">Made with ♥ for Orman — tweak it and make it yours.</footer>
+<footer class="mt-8 text-center text-slate-500 text-sm">Made with ♥ for Orman — this is client-side only. Do not paste secrets into untrusted websites.</footer>
 
   </div>  <script>
-    // Utility: secure random bytes -> hex
+    // Utilities
     function toHex(arr){ return Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join(''); }
     function uidShort(){ const r = new Uint8Array(8); crypto.getRandomValues(r); return toHex(r); }
     function genToken(len){ const r = new Uint8Array(len); crypto.getRandomValues(r); return btoa(String.fromCharCode(...r)); }
 
-    // DOM
     const username = document.getElementById('username');
     const stype = document.getElementById('stype');
     const tlen = document.getElementById('tlen');
     const exp = document.getElementById('exp');
-    const metaToggle = document.getElementById('metaToggle');
     const preview = document.getElementById('preview');
     const generateBtn = document.getElementById('generateBtn');
-    const regenBtn = document.getElementById('regenBtn');
+    const whatsappCodeBtn = document.getElementById('whatsappCodeBtn');
     const copyBtn = document.getElementById('copyBtn');
     const downloadBtn = document.getElementById('downloadBtn');
     const sid = document.getElementById('sid');
-    const stoken = document.getElementById('stoken');
     const sexp = document.getElementById('sexp');
-    const themeBtn = document.getElementById('themeBtn');
+    const wacodeEl = document.getElementById('wacode');
+    const waInput = document.getElementById('waInput');
+    const parseBtn = document.getElementById('parseBtn');
+    const parseResult = document.getElementById('parseResult');
+    const clearBtn = document.getElementById('clearBtn');
 
     let lastPayload = null;
 
@@ -143,14 +147,6 @@
         expires_at: expiresAt,
       };
 
-      if(metaToggle.checked){
-        payload.meta = {
-          device: navigator.userAgent || null,
-          origin: location.origin || null,
-          friendly: `${payload.username}@${payload.type}`
-        }
-      }
-
       lastPayload = payload;
       return payload;
     }
@@ -158,8 +154,27 @@
     function render(payload){
       preview.textContent = JSON.stringify(payload, null, 2);
       sid.textContent = payload.id;
-      stoken.textContent = payload.token.slice(0,24) + (payload.token.length>24? '...' : '');
+      wacodeEl.textContent = '—';
       sexp.textContent = new Date(payload.expires_at).toLocaleString();
+    }
+
+    // Create a compact WhatsApp-friendly code that encodes the session id and a short stamp
+    function makeWhatsAppCode(payload){
+      // We'll encode a minimal object to reduce length: {id, stamp}
+      const stamp = Math.floor(Date.now()/1000); // unix seconds
+      const obj = {id: payload.id, s: stamp};
+      const json = JSON.stringify(obj);
+      const b = btoa(unescape(encodeURIComponent(json)));
+      // Prefix and chunk for readability
+      const code = 'XMD-CODE:' + b.match(/.{1,24}/g).join('\n');
+      return code;
+    }
+
+    function decodeWhatsAppCode(b64){
+      try{
+        const json = decodeURIComponent(escape(atob(b64)));
+        return JSON.parse(json);
+      }catch(e){ return null; }
     }
 
     generateBtn.addEventListener('click', ()=>{
@@ -168,17 +183,13 @@
       flash(generateBtn);
     });
 
-    regenBtn.addEventListener('click', ()=>{
-      if(!lastPayload) { const p = buildPayload(); render(p); return; }
-      // regenerate token and id, keep username & settings
-      const now = new Date();
-      lastPayload.id = 'sess_' + uidShort();
-      lastPayload.token = genToken(Math.max(8, Math.min(128, parseInt(tlen.value,10)||32)));
-      lastPayload.created_at = now.toISOString();
-      lastPayload.expires_at = new Date(now.getTime() + (parseInt(exp.value,10)||1440)*60000).toISOString();
-      if(metaToggle.checked) lastPayload.meta.device = navigator.userAgent;
-      render(lastPayload);
-      flash(regenBtn);
+    whatsappCodeBtn.addEventListener('click', ()=>{
+      if(!lastPayload) { const p = buildPayload(); render(p); }
+      const code = makeWhatsAppCode(lastPayload);
+      wacodeEl.textContent = code;
+      // also show quick copy to clipboard
+      navigator.clipboard?.writeText(code).catch(()=>{});
+      alert('WhatsApp code generated and copied to clipboard. Paste it into WhatsApp.');
     });
 
     copyBtn.addEventListener('click', async ()=>{
@@ -196,15 +207,34 @@
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     });
 
-    function flash(el){ el.animate([{transform:'scale(1)'},{transform:'scale(1.04)'},{transform:'scale(1)'}],{duration:260}); }
+    parseBtn.addEventListener('click', ()=>{
+      const text = waInput.value || '';
+      parseResult.textContent = '';
+      // Try to find XMD-CODE b64 block
+      const codeMatch = text.match(/XMD-CODE:([A-Za-z0-9+\/=\n\r ]{8,})/);
+      if(codeMatch){
+        const b64 = codeMatch[1].replace(/\s+/g,'');
+        const decoded = decodeWhatsAppCode(b64);
+        if(decoded && decoded.id){
+          parseResult.textContent = 'Session ID found: ' + decoded.id + '\nDecoded object: ' + JSON.stringify(decoded, null, 2);
+          return;
+        }
+      }
 
-    // small theme toggle: flip between light-ish and dark-ish
-    let light = false;
-    themeBtn.addEventListener('click', ()=>{
-      light = !light;
-      if(light){ document.documentElement.style.setProperty('--accent','linear-gradient(90deg,#f97316,#ef4444)'); document.body.classList.remove('bg-gradient-to-br'); document.body.style.background = 'linear-gradient(180deg,#f8fafc,#eef2ff)'; document.body.style.color = '#0f172a'; }
-      else{ document.documentElement.style.setProperty('--accent','linear-gradient(90deg,#7c3aed,#06b6d4)'); document.body.style.background = ''; document.body.style.color = ''; }
+      // fallback: look for a session id pattern (sess_xxx)
+      const sidMatch = text.match(/(sess_[0-9a-f]{16,32})/i);
+      if(sidMatch){ parseResult.textContent = 'Session ID found: ' + sidMatch[1]; return; }
+
+      // fallback: look for JWT-like token (three parts)
+      const jwtMatch = text.match(/([A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+)/);
+      if(jwtMatch){ parseResult.textContent = 'Possible token found: ' + jwtMatch[1]; return; }
+
+      parseResult.textContent = 'No recognizable session id or XMD code found. Paste the full WhatsApp reply you received.';
     });
+
+    clearBtn.addEventListener('click', ()=>{ waInput.value=''; parseResult.textContent=''; });
+
+    function flash(el){ el.animate([{transform:'scale(1)'},{transform:'scale(1.04)'},{transform:'scale(1)'}],{duration:260}); }
 
     // auto-generate on first load
     window.addEventListener('load', ()=>{ const p = buildPayload(); render(p); });
